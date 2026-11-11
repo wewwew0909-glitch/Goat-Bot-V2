@@ -1,0 +1,126 @@
+html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RENJI - Dashboard</title>
+<style>
+*{box-sizing:border-box;font-family:Arial, sans-serif}
+body{margin:0;background:#121212;color:#e5e5e5;padding:16px}
+.top{max-width:520px;margin:0 auto}
+h1{font-size:32px;letter-spacing:1px;margin:10px 0}
+h2{font-size:22px;margin:20px 0 10px}
+.banner{background:#5a2a2a;border:1px solid #7a3a3a;padding:12px;border-radius:10px;color:#f2b8b8;font-size:13px}
+.steps{display:flex;justify-content:space-between;color:#888;font-size:13px;margin:18px 5px}
+.card{background:#1c1c1c;border:1px solid #2c2c2c;border-radius:12px;padding:16px;margin:14px 0}
+.card p{color:#aaa;font-size:13px;line-height:1.5}
+.btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+button{padding:10px 14px;border-radius:8px;border:1px solid #444;background:#242424;color:#fff;cursor:pointer;font-size:13px}
+button.primary{background:#6d5aa8;border:none}
+.search{display:flex;border:1px solid #444;border-radius:10px;overflow:hidden;background:#1c1c1c}
+.search input{flex:1;background:transparent;border:none;color:#fff;padding:12px;outline:none}
+.search select{background:#1c1c1c;color:#fff;border:none;border-left:1px solid #444;padding:0 8px}
+.meta{display:flex;justify-content:space-between;align-items:center;margin:14px 0;font-size:12px;color:#aaa}
+.meta button{background:#242424}
+.cmd{background:#26262e;border:1px solid #3a3a44;border-radius:12px;padding:14px;margin:10px 0;display:flex;justify-content:space-between;align-items:flex-start}
+.cmd b{font-size:20px}
+.cmd small{color:#aaa;display:block;margin-top:6px;line-height:1.4}
+.switch{width:52px;height:28px;background:#6d5aa8;border-radius:20px;position:relative;flex-shrink:0;cursor:pointer}
+.switch:after{content:"";width:22px;height:22px;background:#c9a9e8;border-radius:50%;position:absolute;top:3px;left:26px}
+.switch.off{background:#444}
+.switch.off:after{left:3px;background:#999}
+textarea{width:100%;height:90px;background:#121212;border:1px solid #444;color:#ccc;border-radius:10px;padding:10px;font-size:12px}
+input[type=text]{width:100%;padding:12px;background:#121212;border:1px solid #444;color:#fff;border-radius:10px;margin-top:8px}
+.footer{color:#666;font-size:11px;text-align:center;margin:20px 0}
+</style>
+</head>
+<body>
+<div class="top">
+<h1>RENJI</h1>
+<h2>Workspace Overview</h2>
+<div class="banner"><b>⚠ Session needed</b><br>A Facebook session is required to continue. Start a session below to reconnect.</div>
+<div class="steps"><span>01<br>Start</span><span>02<br>Connect</span><span>03<br>Ready</span></div>
+
+<div class="card">
+<b>Facebook session needs attention</b>
+<p id="sessionText">No active session. Start a new session to begin.</p>
+<div class="btns">
+<button class="primary" onclick="startBot()">Start</button>
+<button onclick="stopBot()">Stop</button>
+<button onclick="document.getElementById('appstateBox').scrollIntoView()">Update appstate</button>
+<button onclick="showCustomize()">Customize</button>
+</div>
+</div>
+
+<div class="card" id="appstateBox">
+<b>Appstate</b>
+<p>Paste mo dito yung appstate.json mo galing Kiwi Browser. Naka-save lang to sa phone mo.</p>
+<textarea id="appstate" placeholder='Paste appstate JSON dito...'></textarea>
+<div class="btns"><button class="primary" onclick="saveAppstate()">Save Appstate</button></div>
+<b style="display:block;margin-top:16px">Prefix</b>
+<input type="text" id="prefix" value="?" maxlength="2">
+<div class="btns"><button onclick="savePrefix()">Save Prefix</button></div>
+</div>
+
+<h2>Customize</h2>
+<div class="search">
+<input id="search" placeholder="Search commands..." oninput="render()">
+<select id="cat" onchange="render()"><option>All categories</option><option>AI</option><option>Media</option><option>Tools</option><option>Fun</option></select>
+</div>
+<div class="meta"><span id="count">109 of 109 commands shown</span><span><button onclick="toggleAll(true)">Turn shown on</button> <button onclick="toggleAll(false)">Turn shown off</button></span></div>
+<div id="list"></div>
+<div class="footer">RENJI DASHBOARD • Developed by kiyan • Owner of Renji Bot</div>
+</div>
+
+<script>
+let cmds=[
+{name:"?ai",cat:"AI",desc:"Ask AI - general assistant command"},
+{name:"?shoti",cat:"Media",desc:"Generate shoti - media command"},
+{name:"?help",cat:"Tools",desc:"Show help menu"},
+{name:"?gpt",cat:"AI",desc:"Ask GPT"},
+{name:"?music",cat:"Media",desc:"Play music / download song"},
+{name:"?tiktok",cat:"Media",desc:"Download TikTok video"},
+{name:"?uid",cat:"Tools",desc:"Get user ID"},
+{name:"?info",cat:"Tools",desc:"Bot info"},
+{name:"?prefix",cat:"Tools",desc:"Change prefix"},
+{name:"?weather",cat:"Tools",desc:"Check weather"},
+{name:"?lyrics",cat:"Media",desc:"Get song lyrics"},
+{name:"?img",cat:"AI",desc:"Generate image"},
+{name:"?joke",cat:"Fun",desc:"Random joke"},
+{name:"?quote",cat:"Fun",desc:"Random quote"},
+{name:"?pair",cat:"Fun",desc:"Pair users"},
+{name:"?age",cat:"Tools",desc:"Calculate age"},
+{name:"?stalk",cat:"Tools",desc:"Stalk profile"},
+{name:"?fbdl",cat:"Media",desc:"Download FB video"}
+];
+let state=JSON.parse(localStorage.getItem("renji_cmds")||"{}");
+function render(){
+let q=document.getElementById("search").value.toLowerCase();
+let c=document.getElementById("cat").value;
+let list=document.getElementById("list"); list.innerHTML="";
+let shown=0;
+cmds.forEach(cmd=>{
+if(q && !cmd.name.includes(q)) return;
+if(c!=="All categories" && cmd.cat!==c) return;
+shown++;
+let on=state[cmd.name]!==false;
+let div=document.createElement("div"); div.className="cmd";
+div.innerHTML=`<div><b>${cmd.name}</b><small>${cmd.desc}<br>${cmd.cat.toLowerCase()} command</small></div><div class="switch ${on?"":"off"}" onclick="toggleCmd('${cmd.name}',this)"></div>`;
+list.appendChild(div);
+});
+document.getElementById("count").innerText=shown+" of 109 commands shown";
+}
+function toggleCmd(n,el){ state[n]=!(state[n]!==false); localStorage.setItem("renji_cmds",JSON.stringify(state)); el.classList.toggle("off"); }
+function toggleAll(v){ cmds.forEach(c=>state[c.name]=v); localStorage.setItem("renji_cmds",JSON.stringify(state)); render(); }
+function startBot(){ document.getElementById("sessionText").innerText="Bot is running. Prefix: "+document.getElementById("prefix").value; alert("Renji started"); }
+function stopBot(){ document.getElementById("sessionText").innerText="Bot stopped."; alert("Renji stopped"); }
+function saveAppstate(){ localStorage.setItem("renji_appstate",document.getElementById("appstate").value); alert("Appstate saved"); }
+function savePrefix(){ localStorage.setItem("renji_prefix",document.getElementById("prefix").value); alert("Prefix saved: "+document.getElementById("prefix").value); }
+function showCustomize(){ document.getElementById("list").scrollIntoView(); }
+document.getElementById("appstate").value=localStorage.getItem("renji_appstate")||"";
+document.getElementById("prefix").value=localStorage.getItem("renji_prefix")||"?";
+render();
+</script>
+</body>
+</html>
